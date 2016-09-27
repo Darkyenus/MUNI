@@ -166,3 +166,121 @@ class MildlyCompetentResponsiveBrain(ResponsiveBrain):
                     card_play(player, Cards.DUELLO, target)
                     continue
             break
+
+class CustomisablyResponsiveBrain(ResponsiveBrain):
+
+    def __init__(self, name=None, action_queue=None):
+        self.name = name
+        if action_queue is None:
+            self.action_queue = [
+                CustomisablyResponsiveBrain.action_open_boxes,
+                CustomisablyResponsiveBrain.action_go_shopping,
+                CustomisablyResponsiveBrain.action_do_stealing,
+                CustomisablyResponsiveBrain.action_do_destroying,
+                CustomisablyResponsiveBrain.action_do_healing_self,
+                CustomisablyResponsiveBrain.action_do_healing_all,
+                CustomisablyResponsiveBrain.action_indiani,
+                CustomisablyResponsiveBrain.action_gatling,
+                CustomisablyResponsiveBrain.action_bang,
+                CustomisablyResponsiveBrain.action_duel,
+            ]
+        else:
+            self.action_queue = action_queue
+
+    def __str__(self):
+        if self.name is None:
+            return super().__str__()
+        else:
+            return self.name
+
+    @staticmethod
+    def pick_player_to_steal_from(player):
+        players = list(player.game.players_in_game_except(player))
+        random.shuffle(players)
+        for p in players:
+            if p.has_cards:
+                return p
+        return None
+
+    @staticmethod
+    def action_open_boxes(player):
+        if Cards.WELLS_FARGO in player.cards or Cards.DILIGENZA in player.cards:
+            if Cards.WELLS_FARGO in player.cards:
+                return card_play(player, Cards.WELLS_FARGO)
+            else:
+                return card_play(player, Cards.DILIGENZA)
+        return False
+
+    @staticmethod
+    def action_go_shopping(player):
+        if Cards.EMPORIO in player.cards:
+            return card_play(player, Cards.EMPORIO)
+        return False
+
+    @staticmethod
+    def action_do_stealing(player):
+        if Cards.PANICO in player.cards:
+            to_steal_from = CustomisablyResponsiveBrain.pick_player_to_steal_from(player)
+            if to_steal_from is None:
+                return False
+            return card_play(player, Cards.PANICO, to_steal_from)
+        return False
+
+    @staticmethod
+    def action_do_destroying(player):
+        if Cards.CAT_BALOU in player.cards:
+            to_steal_from = CustomisablyResponsiveBrain.pick_player_to_steal_from(player)
+            if to_steal_from is None:
+                return False
+            return card_play(player, Cards.CAT_BALOU, to_steal_from)
+        return False
+
+    @staticmethod
+    def action_do_healing_self(player):
+        if player.health < player.max_health and Cards.BIRRA in player.cards:
+            return card_play(player, Cards.BIRRA)
+        return False
+
+    @staticmethod
+    def action_do_healing_all(player):
+        if player.health <= 2 and Cards.SALOON in player.cards:
+            return card_play(player, Cards.SALOON)
+        return False
+
+    @staticmethod
+    def action_indiani(player):
+        if Cards.INDIANI in player.cards:
+            return card_play(player, Cards.INDIANI)
+        return False
+
+    @staticmethod
+    def action_gatling(player):
+        if Cards.GATLING in player.cards:
+            return card_play(player, Cards.GATLING)
+        return False
+
+    @staticmethod
+    def action_bang(player):
+        if Cards.BANG in player.cards:
+            targets = sorted(player.game.players_in_game_except(player), key=lambda p: p.health)
+            return card_play(player, Cards.BANG, targets[0])
+        return False
+
+    @staticmethod
+    def action_duel(player):
+        if Cards.DUELLO in player.cards:
+            my_bangs = player.cards.count(Cards.BANG) + player.cards.count(Cards.GATLING)
+            targets = sorted(player.game.players_in_game_except(player), key=lambda p: p.health)
+            for target in targets:
+                if target.count_cards - 1 <= my_bangs:
+                    return card_play(player, Cards.DUELLO, target)
+        return False
+
+    def simulate_turn(self, player):
+        while True:
+            did_something = False
+            for action in self.action_queue:
+                while action(player):
+                    did_something = True
+            if not did_something:
+                break
