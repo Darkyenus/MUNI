@@ -5,17 +5,22 @@ def compare(runs, log, *brains):
     for b in brains:
         b.score = 0
 
+    fight_index_pairs = []
+
     for brain_1_index in range(len(brains)):
         for brain_2_index in range(brain_1_index + 1, len(brains)):
-            for i in range(runs):
-                # Shuffle starting positions, as it gives significant edge
-                if i % 2 == 0:
-                    game = Game(log, brains[brain_1_index], brains[brain_2_index])
-                else:
-                    game = Game(log, brains[brain_2_index], brains[brain_1_index])
-                rounds, winner = simulate_game(game)
-                if winner is not None:
-                    winner.brain.score += 1
+            fight_index_pairs.append((brain_1_index, brain_2_index))
+            fight_index_pairs.append((brain_2_index, brain_1_index))
+
+    def simulate_match(seed, brain_1_index, brain_2_index):
+        rounds, winner = simulate_game(Game(log, seed, brains[brain_1_index], brains[brain_2_index]))
+        if winner is not None:
+            winner.brain.score += 1
+        return winner
+
+    for b1, b2 in fight_index_pairs:
+        for i in range(runs):
+            simulate_match(i, b1, b2)
 
     result = sorted(brains, key=attrgetter('score'), reverse=True)
     for b in result:

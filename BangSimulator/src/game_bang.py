@@ -1,5 +1,5 @@
 
-import random
+import random as random_package_not_thread_safe
 
 class Card:
     def __init__(self, name, deck_amount, needs_target=False):
@@ -57,8 +57,9 @@ class AbstractBrain:
 
 
 class Player:
-    def __init__(self, game, player_id, health, brain):
+    def __init__(self, game, random, player_id, health, brain):
         self.game = game
+        self.random = random
         self.player_id = player_id
         self.max_health = health
         self.health = health
@@ -81,7 +82,7 @@ def card_draw_return(game):
     if len(game.fresh_cards) == 0:
         game.fresh_cards.extend(game.used_cards)
         game.used_cards.clear()
-        random.shuffle(game.fresh_cards)
+        game.random.shuffle(game.fresh_cards)
     return game.fresh_cards.pop()
 
 def card_draw(player):
@@ -159,7 +160,7 @@ def card_play(player, card, target=None):
     elif card == Cards.PANICO:
         if len(target.cards) != 0:
             consume_card(player, card)
-            stolen = random.choice(target.cards)
+            stolen = player.random.choice(target.cards)
             target.cards.remove(stolen)
             player.cards.append(stolen)
             log(str(player)+" has stolen "+str(stolen)+" from "+str(target))
@@ -169,7 +170,7 @@ def card_play(player, card, target=None):
     elif card == Cards.CAT_BALOU:
         if len(target.cards) != 0:
             consume_card(player, card)
-            stolen = random.choice(target.cards)
+            stolen = player.random.choice(target.cards)
             target.cards.remove(stolen)
             player.game.used_cards.append(stolen)
             log(str(player)+" has discarded "+str(stolen)+" from "+str(target))
@@ -220,7 +221,7 @@ def card_play(player, card, target=None):
             choosing_player = players[(index + me_index) % len(players)]
             selected = choosing_player.brain.emporio_pick(choosing_player, emporio_cards)
             if selected not in emporio_cards:
-                selected = random.choice(emporio_cards)
+                selected = player.random.choice(emporio_cards)
             emporio_cards.remove(selected)
             choosing_player.cards.append(selected)
             log(" ... "+str(choosing_player)+" got "+str(selected))
@@ -291,7 +292,7 @@ def simulate_game_round(game):
             if over_limit > 0:
                 game.log("Player "+str(player)+" ended turn with too much cards, discarding randomly")
                 for _ in range(over_limit):
-                    card_discard(player, random.choice(player.cards))
+                    card_discard(player, player.random.choice(player.cards))
     except GameEndedException:
         game.log("Game ended mid-turn")
         pass
@@ -311,16 +312,19 @@ def simulate_game(game):
 
 class Game:
 
-    def __init__(self, logging, *brains):
+    def __init__(self, logging, seed=None, *brains):
         self.fresh_cards = []
         self.used_cards = []
         self.logging = logging
+        if seed is None:
+            seed = 1
+        self.random = random_package_not_thread_safe.Random(seed)
         for card in Cards.ALL:
             for i in range(card.deck_amount):
                 self.fresh_cards.append(card)
-        random.shuffle(self.fresh_cards)
+        self.random.shuffle(self.fresh_cards)
 
-        self.players = [Player(self, player_id, 4, brain) for brain, player_id in zip(brains, range(len(brains)))]
+        self.players = [Player(self, random_package_not_thread_safe.Random(seed + player_id), player_id, 4, brain) for brain, player_id in zip(brains, range(len(brains)))]
         for player in self.players:
             for _ in range(player.health):
                 card_draw(player)

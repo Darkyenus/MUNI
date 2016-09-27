@@ -1,5 +1,4 @@
 from game_bang import *
-import random
 
 class HumanBrain(AbstractBrain):
 
@@ -89,27 +88,27 @@ class ResponsiveBrain(AbstractBrain):
                     return maybe_card
         if player.cards.count(Cards.BANG) > 2 and Cards.DUELLO in selection and Cards.DUELLO not in player.cards:
             return Cards.DUELLO
-        for maybe_card in [Cards.WELLS_FARGO, Cards.GATLING, Cards.DILIGENZA, Cards.PANICO, Cards.BIRRA,Cards.CAT_BALOU, Cards.MANCATO, Cards.BANG]:
+        for maybe_card in [Cards.WELLS_FARGO, Cards.GATLING, Cards.DILIGENZA, Cards.PANICO, Cards.BIRRA, Cards.CAT_BALOU, Cards.MANCATO, Cards.BANG]:
             if maybe_card in selection:
                 return maybe_card
         return None
 
 class RandomResponsiveBrain(ResponsiveBrain):
     def simulate_turn(self, player):
-        for _ in range(random.randint(1, int(len(player.cards) * 1.5))):
+        for _ in range(player.random.randint(1, int(len(player.cards) * 1.5))):
             if len(player.cards) == 0:
                 break
-            card = random.choice(player.cards)
+            card = player.random.choice(player.cards)
             target = None
             if card.needs_target:
-                target = random.choice(player.game.players_in_game_except(player))
+                target = player.random.choice(player.game.players_in_game_except(player))
             card_play(player, card, target)
 
 class MildlyCompetentResponsiveBrain(ResponsiveBrain):
 
     def pick_player_to_steal_from(self, player):
         players = list(player.game.players_in_game_except(player))
-        random.shuffle(players)
+        player.random.shuffle(players)
         for p in players:
             if p.has_cards:
                 return p
@@ -196,7 +195,7 @@ class CustomisablyResponsiveBrain(ResponsiveBrain):
     @staticmethod
     def pick_player_to_steal_from(player):
         players = list(player.game.players_in_game_except(player))
-        random.shuffle(players)
+        player.random.shuffle(players)
         for p in players:
             if p.has_cards:
                 return p
