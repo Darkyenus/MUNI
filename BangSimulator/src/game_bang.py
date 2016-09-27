@@ -52,6 +52,9 @@ class AbstractBrain:
     def emporio_pick(self, player, selection):
         return None
 
+    def __str__(self, *args, **kwargs):
+        return type(self).__name__
+
 
 class Player:
     def __init__(self, game, player_id, health, brain):
@@ -63,12 +66,20 @@ class Player:
         self.cards = []
         self.played_bang_this_turn = False
 
+    @property
+    def has_cards(self):
+        return len(self.cards) > 0
+
+    @property
+    def count_cards(self):
+        return len(self.cards)
+
     def __str__(self, *args, **kwargs):
         return "Player "+str(self.player_id)+" "+str(self.health)+"/"+str(self.max_health)
 
 def card_draw_return(game):
     if len(game.fresh_cards) == 0:
-        game.fresh_cards.append(game.used_cards)
+        game.fresh_cards.extend(game.used_cards)
         game.used_cards.clear()
         random.shuffle(game.fresh_cards)
     return game.fresh_cards.pop()
@@ -109,7 +120,7 @@ def card_play(player, card, target=None):
         to_player.health -= 1
         if to_player.health == 0:
             log(str(by_player)+" killed "+str(to_player))
-            by_player.cards.append(to_player.cards)
+            by_player.cards.extend(to_player.cards)
             to_player.cards.clear()
         else:
             log(str(by_player)+" damaged "+str(to_player))
@@ -264,7 +275,7 @@ def card_play(player, card, target=None):
     raise NotImplementedError("Should never happen: "+str(player)+" played "+str(card)+" at "+str(target))
 pass
 
-def round_simulate(game):
+def simulate_game_round(game):
     try:
         for player in game.players:
             if player.health <= 0:
@@ -285,16 +296,18 @@ def round_simulate(game):
         game.log("Game ended mid-turn")
         pass
 
-def game_simulate(game):
+def simulate_game(game):
+    rounds = 0
     while len(game.players_in_game) >= 2:
-        round_simulate(game)
+        rounds += 1
+        simulate_game_round(game)
     survivors = game.players_in_game
     if len(survivors) == 0:
         game.log("Game completed: No survivors")
-        return None
+        return rounds, None
     else:
         game.log("Game completed: "+str(survivors[0])+" won")
-        return survivors[0]
+        return rounds, survivors[0]
 
 class Game:
 

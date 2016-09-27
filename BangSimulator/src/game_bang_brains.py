@@ -1,9 +1,9 @@
 from game_bang import *
+import random
 
 class HumanBrain(AbstractBrain):
 
-    @staticmethod
-    def show_list(cards):
+    def show_list(self, cards):
         i = 1
         for c in cards:
             print(str(i) + ") " + str(c))
@@ -67,7 +67,6 @@ class HumanBrain(AbstractBrain):
             print(str(player)+"! Emporio sale is in town! Select a ware!")
             return self.input_pick(selection, "emporio pick")
 
-
 class SittingDuck(AbstractBrain):
     pass
 
@@ -94,3 +93,76 @@ class ResponsiveBrain(AbstractBrain):
             if maybe_card in selection:
                 return maybe_card
         return None
+
+class RandomResponsiveBrain(ResponsiveBrain):
+    def simulate_turn(self, player):
+        for _ in range(random.randint(1, int(len(player.cards) * 1.5))):
+            if len(player.cards) == 0:
+                break
+            card = random.choice(player.cards)
+            target = None
+            if card.needs_target:
+                target = random.choice(player.game.players_in_game_except(player))
+            card_play(player, card, target)
+
+class MildlyCompetentResponsiveBrain(ResponsiveBrain):
+
+    def pick_player_to_steal_from(self, player):
+        players = list(player.game.players_in_game_except(player))
+        random.shuffle(players)
+        for p in players:
+            if p.has_cards:
+                return p
+        return None
+
+    def simulate_turn(self, player):
+        # Open boxes
+        while Cards.WELLS_FARGO in player.cards or Cards.DILIGENZA in player.cards:
+            if Cards.WELLS_FARGO in player.cards:
+                card_play(player, Cards.WELLS_FARGO)
+            else:
+                card_play(player, Cards.DILIGENZA)
+
+        # Go shopping
+        while Cards.EMPORIO in player.cards:
+            card_play(player, Cards.EMPORIO)
+
+        # Steal what you can...
+        while Cards.PANICO in player.cards:
+            to_steal_from = self.pick_player_to_steal_from(player)
+            if to_steal_from is None:
+                break
+            card_play(player, Cards.PANICO, to_steal_from)
+        # ...discard what you can't
+        while Cards.CAT_BALOU in player.cards:
+            to_steal_from = self.pick_player_to_steal_from(player)
+            if to_steal_from is None:
+                break
+            card_play(player, Cards.CAT_BALOU, to_steal_from)
+
+        # Take care of health
+        while player.health < player.max_health and Cards.BIRRA in player.cards:
+            card_play(player, Cards.BIRRA)
+        if player.health <= 2 and Cards.SALOON in player.cards:
+            card_play(player, Cards.SALOON)
+
+        # Unleash beasts!
+        while Cards.INDIANI in player.cards:
+            card_play(player, Cards.INDIANI)
+        while Cards.GATLING in player.cards:
+            card_play(player, Cards.GATLING)
+
+        # Bang!
+        if Cards.BANG in player.cards:
+            targets = sorted(player.game.players_in_game_except(player), key=lambda p: p.health)
+            card_play(player, Cards.BANG, targets[0])
+
+        # Duel time!
+        while Cards.DUELLO in player.cards:
+            my_bangs = player.cards.count(Cards.BANG) + player.cards.count(Cards.GATLING)
+            targets = sorted(player.game.players_in_game_except(player), key=lambda p: p.health)
+            for target in targets:
+                if target.count_cards - 1 <= my_bangs:
+                    card_play(player, Cards.DUELLO, target)
+                    continue
+            break
