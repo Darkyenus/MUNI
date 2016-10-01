@@ -1,7 +1,9 @@
 from game_bang_brains import *
 from operator import attrgetter
+import time
 
 def compare(runs, log, *brains):
+    start_time = time.process_time()
     for b in brains:
         b.score = 0
 
@@ -22,12 +24,15 @@ def compare(runs, log, *brains):
         for i in range(runs):
             simulate_match(i, b1, b2)
 
+    elapsed_time = time.process_time() - start_time
+    print("Simulated "+str(len(fight_index_pairs) * runs)+" runs in "+str(elapsed_time)+" seconds ("+str((len(fight_index_pairs) * runs)/elapsed_time)+" runs per second)")
+
     result = sorted(brains, key=attrgetter('score'), reverse=True)
     for b in result:
         print(str(b)+" with "+str(b.score)+" victories")
     return result
 
-compare(100000, False,
+compare(10000, False,
         CustomisablyResponsiveBrain(),
         CustomisablyResponsiveBrain(name="HealingLater", action_queue=[
             CustomisablyResponsiveBrain.action_open_boxes,
@@ -35,10 +40,10 @@ compare(100000, False,
             CustomisablyResponsiveBrain.action_do_stealing,
             CustomisablyResponsiveBrain.action_do_destroying,
             CustomisablyResponsiveBrain.action_do_healing_self,
+            CustomisablyResponsiveBrain.action_do_healing_all,
             CustomisablyResponsiveBrain.action_indiani,
             CustomisablyResponsiveBrain.action_gatling,
             CustomisablyResponsiveBrain.action_bang,
-            CustomisablyResponsiveBrain.action_do_healing_all,
             CustomisablyResponsiveBrain.action_duel,
         ])
         )
