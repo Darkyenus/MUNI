@@ -226,110 +226,134 @@ class CustomisablyResponsiveBrain(ResponsiveBrain):
 
 class GeneticBrain(ResponsiveBrain):
 
+    gene_selection = [
+        BrainActions.action_open_boxes,
+        BrainActions.action_go_shopping,
+        BrainActions.action_do_stealing,
+        BrainActions.action_do_destroying,
+        BrainActions.action_do_healing_self,
+        BrainActions.action_do_healing_all,
+        BrainActions.action_indiani,
+        BrainActions.action_gatling,
+        BrainActions.action_bang,
+        BrainActions.action_duel,
+    ]
+
+    mutation_functions = []
+    add_probability = 3
+    remove_probability = 2
+    swap_probability = 4
+
+    def add(self):
+        self.genes.insert(self.random.randint(0, len(self.genes) + 1), self.random.choice(GeneticBrain.gene_selection))
+
+
+    def remove(self):
+        if len(self.genes) != 0:
+            self.genes.remove(self.random.choice(self.genes))
+
+    def swap(self):
+        if len(self.genes) == 0:
+            return
+        s1 = self.random.randint(0, len(self.genes) - 1)
+        s2 = self.random.randint(0, len(self.genes) - 1)
+        s1v = self.genes[s1]
+        s2v = self.genes[s2]
+        self.genes[s1] = s2v
+        self.genes[s2] = s1v
+
+    for _ in range(add_probability):
+        mutation_functions.append(add)
+    for _ in range(remove_probability):
+        mutation_functions.append(remove)
+    for _ in range(swap_probability):
+        mutation_functions.append(swap)
+
     def __init__(self):
         self.generation = 0
-        self.action_queue = []
-        self.mutation_functions = []
-        self.add_probability = 2
-        self.remove_probability = 3
-        self.swap_probability = 4
+        # Contains genome of this brain
+        self.genes = []
+        # Contains booleans determining if the corresponding gene has ever be used or can be forgotten
+        self.gene_usages = []
         self.random = random.Random()
-
-        genes = [
-            BrainActions.action_open_boxes,
-            BrainActions.action_go_shopping,
-            BrainActions.action_do_stealing,
-            BrainActions.action_do_destroying,
-            BrainActions.action_do_healing_self,
-            BrainActions.action_do_healing_all,
-            BrainActions.action_indiani,
-            BrainActions.action_gatling,
-            BrainActions.action_bang,
-            BrainActions.action_duel,
-        ]
-
-        def add():
-            self.action_queue.insert(self.random.randint(0, len(self.action_queue) + 1), self.random.choice(genes))
-
-
-        def remove():
-            if len(self.action_queue) != 0:
-                self.action_queue.remove(self.random.choice(self.action_queue))
-
-        def swap():
-            if len(self.action_queue) == 0:
-                return
-            s1 = self.random.randint(0, len(self.action_queue)-1)
-            s2 = self.random.randint(0, len(self.action_queue)-1)
-            s1v = self.action_queue[s1]
-            s2v = self.action_queue[s2]
-            self.action_queue[s1] = s2v
-            self.action_queue[s2] = s1v
-
-
-        for _ in range(self.add_probability):
-            self.mutation_functions.append(add)
-        for _ in range(self.remove_probability):
-            self.mutation_functions.append(remove)
-        for _ in range(self.swap_probability):
-            self.mutation_functions.append(swap)
 
     def simplify_genome(self):
         new_action_queue = []
-        for action in self.action_queue:
+        for action in self.genes:
             if len(new_action_queue) > 0 and new_action_queue[-1] == action:
                 pass
             else:
                 new_action_queue.append(action)
-        self.action_queue = new_action_queue
+        self.genes = new_action_queue
+
+    def refresh_gene_blocks(self):
+        self.gene_usages = [False for _ in self.genes]
+
+    @property
+    def blocked_genes(self):
+        result = []
+        for i in range(len(self.genes)):
+            if self.gene_usages[i]:
+                result.append(self.genes[i])
+        return result
 
     def __repr__(self):
         result = "Genetic Brain of "+str(self.generation) + ". generation\n"
-        for action in self.action_queue:
+        for action in self.genes:
             result += "\t{}\n".format(action.__name__)
         return result
 
     def simulate_turn(self, player):
         while True:
             did_something = False
-            for action in self.action_queue:
-                while action(player):
+            for action_i in range(len(self.genes)):
+                if self.genes[action_i](player):
                     did_something = True
+                    self.gene_usages[action_i] = True
             if not did_something:
                 break
 
 
-def genetic_mutant_create(from_brain, mutations=3):
+def genetic_mutant_create(from_brain, mutations=1):
     new_mutant = GeneticBrain()
     if from_brain is not None:
         new_mutant.parent_brains = [from_brain]
-        new_mutant.action_queue = list(from_brain.action_queue)
+        new_mutant.genes = from_brain.blocked_genes
         new_mutant.generation = from_brain.generation + 1
+
+        for _ in range(mutations):
+            new_mutant.random.choice(new_mutant.mutation_functions)(new_mutant)
     else:
         new_mutant.parent_brains = []
-    for _ in range(mutations):
-        new_mutant.random.choice(new_mutant.mutation_functions)()
+        # Only add mutations for new brains
+        for _ in range(mutations):
+            GeneticBrain.add(new_mutant)
+
     new_mutant.simplify_genome()
+    new_mutant.refresh_gene_blocks()
     return new_mutant
 
-def genetic_mutant_merge(brain1, brain2, mutations=3):
+def genetic_mutant_merge(brain1, brain2, mutations=1):
     merged_mutant = GeneticBrain()
     merged_mutant.parent_brains = [brain1, brain2]
     merged_mutant.generation = max(brain1.generation, brain2.generation) + 1
-    while len(brain1.action_queue) > 0 or len(brain2.action_queue) > 0:
-        if len(brain1.action_queue) == 0:
-            merged_mutant.action_queue.append(brain2.action_queue.pop(0))
-        elif len(brain2.action_queue) == 0:
-            merged_mutant.action_queue.append(brain1.action_queue.pop(0))
+    brain1_genes = brain1.blocked_genes
+    brain2_genes = brain2.blocked_genes
+    while len(brain1_genes) > 0 or len(brain2_genes) > 0:
+        if len(brain1_genes) == 0:
+            merged_mutant.genes.append(brain2_genes.pop(0))
+        elif len(brain2_genes) == 0:
+            merged_mutant.genes.append(brain1_genes.pop(0))
         else:
             if merged_mutant.random.getrandbits(1):
-                gene = brain2.action_queue.pop(0)
+                gene = brain2_genes.pop(0)
             else:
-                gene = brain1.action_queue.pop(0)
+                gene = brain1_genes.pop(0)
             if merged_mutant.random.getrandbits(2) != 0:
                 # 1/4 of merged genes will get lost
-                merged_mutant.action_queue.append(gene)
+                merged_mutant.genes.append(gene)
     for _ in range(mutations):
-        merged_mutant.random.choice(merged_mutant.mutation_functions)()
+        merged_mutant.random.choice(merged_mutant.mutation_functions)(merged_mutant)
     merged_mutant.simplify_genome()
+    merged_mutant.refresh_gene_blocks()
     return merged_mutant
