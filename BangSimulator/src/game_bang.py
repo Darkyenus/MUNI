@@ -87,14 +87,14 @@ def card_draw_return(game):
 
 def card_draw(player):
     card = card_draw_return(player.game)
-    player.game.log("draw card "+str(player)+" "+str(card))
+    player.game.log("draw card {} {}", player, card)
     player.cards.append(card)
 
 def card_discard(player, card):
     if card in player.cards:
         player.cards.remove(card)
         player.game.used_cards.append(card)
-        player.game.log("discard card "+str(player)+" "+str(card))
+        player.game.log("discard card {} {}", player, card)
         return True
     return False
 
@@ -104,10 +104,10 @@ class GameEndedException(Exception):
 def card_play(player, card, target=None):
     log = player.game.log
     if card not in player.cards:
-        log(str(player)+" can't play "+str(card)+" because it is not in their inventory")
+        log("{} can't play {} because it is not in their inventory", player, card)
         return False
     if (card.needs_target == (target is None)) or (target == player) or (target is not None and target.health <= 0):
-        log(str(player)+" can't play "+str(card)+" because needs_target = "+str(card.needs_target)+" and target is "+str(target))
+        log("{} can't play {} because needs_target = {} and target is {}", player, card, card.needs_target, target)
         return False
 
     def consume_card(p, c):
@@ -116,24 +116,24 @@ def card_play(player, card, target=None):
 
     def cause_damage(by_player, to_player):
         if to_player.health <= 0:
-            log("Can't cause damage to "+str(to_player)+", already dead")
+            log("Can't cause damage to {}, already dead", to_player)
             return
         to_player.health -= 1
         if to_player.health == 0:
-            log(str(by_player)+" killed "+str(to_player))
+            log("{} killed {}", by_player, to_player)
             by_player.cards.extend(to_player.cards)
             to_player.cards.clear()
         else:
-            log(str(by_player)+" damaged "+str(to_player))
+            log("{} damaged {}", by_player, to_player)
         if len(by_player.game.players_in_game) <= 1:
             raise GameEndedException
 
 
     if card == Cards.BANG:
         if player.played_bang_this_turn:
-            log(str(player)+" can't play "+str(card)+" because they already played bang this turn")
+            log("{} can't play {} because they already played bang this turn", player, card)
             return False
-        log(str(player)+" shot after "+str(target))
+        log("{} shot after {}", player, target)
         consume_card(player, card)
         player.played_bang_this_turn = True
         response = target.brain.handle_threat(target, player, card)
@@ -147,15 +147,15 @@ def card_play(player, card, target=None):
             cause_damage(player, target)
         return True
     elif card == Cards.MANCATO:
-        log(str(player)+" tried to dodge without reason")
+        log("{} tried to dodge without reason", player)
         return False
     elif card == Cards.BIRRA:
         if player.health < player.max_health:
             player.health += 1
             consume_card(player, card)
-            log(str(player)+" drank a beer")
+            log("{} drank a beer", player)
             return True
-        log(str(player)+" tried to drink a beer, but at full health")
+        log("{} tried to drink a beer, but at full health", player)
         return False
     elif card == Cards.PANICO:
         if len(target.cards) != 0:
@@ -163,9 +163,9 @@ def card_play(player, card, target=None):
             stolen = player.random.choice(target.cards)
             target.cards.remove(stolen)
             player.cards.append(stolen)
-            log(str(player)+" has stolen "+str(stolen)+" from "+str(target))
+            log("{} has stolen {} from {}", player, stolen, target)
             return True
-        log(str(player)+" tried to steal a card, but "+str(target)+" has no cards")
+        log("{} tried to steal a card, but {} has no cards", player, target)
         return False
     elif card == Cards.CAT_BALOU:
         if len(target.cards) != 0:
@@ -173,12 +173,12 @@ def card_play(player, card, target=None):
             stolen = player.random.choice(target.cards)
             target.cards.remove(stolen)
             player.game.used_cards.append(stolen)
-            log(str(player)+" has discarded "+str(stolen)+" from "+str(target))
+            log("{} has discarded {} from {}", player, stolen, target)
             return True
-        log(str(player)+" tried to discard a card, but "+str(target)+" has no cards")
+        log("{} tried to discard a card, but {} has no cards", player, target)
         return False
     elif card == Cards.DUELLO:
-        log(str(player)+" entered a duel with "+str(target))
+        log("{} entered a duel with {}", player, target)
         consume_card(player, card)
         while True:
             # Target needs to shoot
@@ -189,7 +189,7 @@ def card_play(player, card, target=None):
                 # Duel continues
             else:
                 # Did not shoot, takes damage, duel ends
-                log(str(player)+" has won the duel")
+                log("{} has won the duel", player)
                 cause_damage(player, target)
                 return True
             # Initiator needs to shoot
@@ -200,7 +200,7 @@ def card_play(player, card, target=None):
                 # Duel continues
             else:
                 # Did not shoot, takes damage, duel ends
-                log(str(target)+" has won the duel")
+                log("{} has won the duel", target)
                 cause_damage(by_player=target, to_player=player)
                 return True
             # Both shot, duel loop repeats
@@ -208,10 +208,10 @@ def card_play(player, card, target=None):
         consume_card(player, card)
         card_draw(player)
         card_draw(player)
-        log(str(player)+" got two cards from "+str(card))
+        log("{} got two cards from {}", player, card)
         return True
     elif card == Cards.EMPORIO:
-        log(str(player)+" opened "+str(card))
+        log("{} opened {}", player, card)
         consume_card(player, card)
         players = player.game.players_in_game
         emporio_cards = [card_draw_return(player.game) for _ in players]
@@ -224,20 +224,20 @@ def card_play(player, card, target=None):
                 selected = player.random.choice(emporio_cards)
             emporio_cards.remove(selected)
             choosing_player.cards.append(selected)
-            log(" ... "+str(choosing_player)+" got "+str(selected))
+            log(" ... {} got {}", choosing_player, selected)
         return True
     elif card == Cards.INDIANI:
-        log(str(player)+" called Indiani!")
+        log("{} called Indiani!", player)
         consume_card(player, card)
         for target in player.game.players_in_game_except(player):
             response = target.brain.handle_threat(target, player, card)
             if response in target.cards and response in card.threat_response:
                 # Missed
                 consume_card(target, response)
-                log(" ... which missed "+str(target))
+                log(" ... which missed {}", target)
             else:
                 # Hit
-                log(" ... which hit "+str(target))
+                log(" ... which hit {}", target)
                 cause_damage(player, target)
         return True
     elif card == Cards.WELLS_FARGO:
@@ -245,20 +245,20 @@ def card_play(player, card, target=None):
         card_draw(player)
         card_draw(player)
         card_draw(player)
-        log(str(player)+" got three cards from "+str(card))
+        log("{} got three cards from {}", player, card)
         return True
     elif card == Cards.GATLING:
-        log(str(player)+" shot after all")
+        log("{} shot after all", player)
         consume_card(player, card)
         for target in player.game.players_in_game_except(player):
             response = target.brain.handle_threat(target, player, card)
             if response in target.cards and response in card.threat_response:
                 # Missed
                 consume_card(target, response)
-                log(" ... and missed "+str(target))
+                log(" ... and missed {}", target)
             else:
                 # Hit
-                log(" ... and hit "+str(target))
+                log(" ... and hit {}",target)
                 cause_damage(player, target)
         return True
     elif card == Cards.SALOON:
@@ -268,12 +268,12 @@ def card_play(player, card, target=None):
             if healed.health < healed.max_health:
                 healed_count += 1
                 healed.health += 1
-        log(str(player)+" used saloon and healed "+str(healed_count)+" players")
+        log(str(player)+" used saloon and healed {} players", healed_count)
         return True
     else:
-        log(str(player)+" tried to use unknown card "+str(card))
+        log(str(player)+" tried to use unknown card {}", card)
         return False
-    raise NotImplementedError("Should never happen: "+str(player)+" played "+str(card)+" at "+str(target))
+    raise NotImplementedError("Should never happen: {} played {} at {}", player, card, target)
 pass
 
 def simulate_game_round(game):
@@ -290,7 +290,7 @@ def simulate_game_round(game):
             # Discard over limit cards
             over_limit = len(player.cards) - player.health
             if over_limit > 0:
-                game.log("Player "+str(player)+" ended turn with too much cards, discarding randomly")
+                game.log("Player {} ended turn with too much cards, discarding randomly", player)
                 for _ in range(over_limit):
                     card_discard(player, player.random.choice(player.cards))
     except GameEndedException:
@@ -310,7 +310,7 @@ def simulate_game(game, max_rounds=0):
         game.log("Game completed: No survivors")
         return rounds, None
     else:
-        game.log("Game completed: "+str(survivors[0])+" won")
+        game.log("Game completed: {} won", survivors[0])
         return rounds, survivors[0]
 
 class Game:
@@ -332,9 +332,9 @@ class Game:
             for _ in range(player.health):
                 card_draw(player)
 
-    def log(self, message):
+    def log(self, message_format, *args):
         if self.logging:
-            print(message)
+            print(message_format.format(args))
 
     @property
     def players_in_game(self):
