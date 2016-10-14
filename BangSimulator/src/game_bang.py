@@ -297,10 +297,13 @@ def simulate_game_round(game):
         game.log("Game ended mid-turn")
         pass
 
-def simulate_game(game):
+def simulate_game(game, max_rounds=0):
     rounds = 0
     while len(game.players_in_game) >= 2:
         rounds += 1
+        if 0 < max_rounds < rounds:
+            game.log("Game completed: Too many turns")
+            return rounds, None
         simulate_game_round(game)
     survivors = game.players_in_game
     if len(survivors) == 0:
