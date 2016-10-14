@@ -304,15 +304,9 @@ class GeneticBrain(ResponsiveBrain):
         return result
 
     def simulate_turn(self, player):
-        while True:
-            did_something = False
-            for action_i in range(len(self.genes)):
-                if self.genes[action_i](player):
-                    did_something = True
-                    self.gene_usages[action_i] = True
-            if not did_something:
-                break
-
+        for action_i in range(len(self.genes)):
+            if self.genes[action_i](player):
+                self.gene_usages[action_i] = True
 
 def genetic_mutant_create(from_brain, mutations=1):
     new_mutant = GeneticBrain()
