@@ -1,6 +1,7 @@
 from game_bang_brains import *
 from operator import attrgetter
 import time
+import matplotlib.pyplot as plt
 
 def compare(runs, log, *brains):
     start_time = time.process_time()

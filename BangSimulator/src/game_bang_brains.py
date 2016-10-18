@@ -273,8 +273,6 @@ class GeneticBrain(ResponsiveBrain):
         self.generation = 0
         # Contains genome of this brain
         self.genes = []
-        # Contains booleans determining if the corresponding gene has ever be used or can be forgotten
-        self.gene_usages = []
         self.random = random.Random()
 
     def simplify_genome(self):
@@ -286,16 +284,9 @@ class GeneticBrain(ResponsiveBrain):
                 new_action_queue.append(action)
         self.genes = new_action_queue
 
-    def refresh_gene_blocks(self):
-        self.gene_usages = [False for _ in self.genes]
-
     @property
     def blocked_genes(self):
-        result = []
-        for i in range(len(self.genes)):
-            if self.gene_usages[i]:
-                result.append(self.genes[i])
-        return result
+        return list(self.genes)
 
     def __repr__(self):
         result = "Genetic Brain of "+str(self.generation) + ". generation\n"
@@ -304,9 +295,11 @@ class GeneticBrain(ResponsiveBrain):
         return result
 
     def simulate_turn(self, player):
+        if len(self.genes) == 0:
+            player.health = 0  # Can't do anything, suicide prevent hogging resources
+            return
         for action_i in range(len(self.genes)):
-            if self.genes[action_i](player):
-                self.gene_usages[action_i] = True
+            self.genes[action_i](player)
 
 def genetic_mutant_create(from_brain, mutations=1):
     new_mutant = GeneticBrain()
@@ -324,30 +317,35 @@ def genetic_mutant_create(from_brain, mutations=1):
             GeneticBrain.add(new_mutant)
 
     new_mutant.simplify_genome()
-    new_mutant.refresh_gene_blocks()
     return new_mutant
 
-def genetic_mutant_merge(brain1, brain2, mutations=1):
+def genetic_mutant_merge(brain1, brain2):
     merged_mutant = GeneticBrain()
     merged_mutant.parent_brains = [brain1, brain2]
     merged_mutant.generation = max(brain1.generation, brain2.generation) + 1
     brain1_genes = brain1.blocked_genes
     brain2_genes = brain2.blocked_genes
-    while len(brain1_genes) > 0 or len(brain2_genes) > 0:
-        if len(brain1_genes) == 0:
-            merged_mutant.genes.append(brain2_genes.pop(0))
-        elif len(brain2_genes) == 0:
-            merged_mutant.genes.append(brain1_genes.pop(0))
+
+    min_crossover_point = 1
+    max_crossover_point = min(len(brain1_genes), len(brain2_genes)) - 1
+    if min_crossover_point <= max_crossover_point:
+        crossover_point = merged_mutant.random.randint(min_crossover_point, max_crossover_point)
+        crossover_serving = merged_mutant.random.getrandbits(1)
+
+        def serving_gene():
+            return brain1_genes if crossover_serving else brain2_genes
+
+        processing_point = 0
+        while processing_point < len(serving_gene()):
+            merged_mutant.genes.append(serving_gene()[processing_point])
+            processing_point += 1
+            if processing_point == crossover_point:
+                crossover_serving = not crossover_serving
+    else:
+        if len(brain1_genes) > len(brain2_genes):
+            merged_mutant.genes.extend(brain1_genes)
         else:
-            if merged_mutant.random.getrandbits(1):
-                gene = brain2_genes.pop(0)
-            else:
-                gene = brain1_genes.pop(0)
-            if merged_mutant.random.getrandbits(2) != 0:
-                # 1/4 of merged genes will get lost
-                merged_mutant.genes.append(gene)
-    for _ in range(mutations):
-        merged_mutant.random.choice(merged_mutant.mutation_functions)(merged_mutant)
+            merged_mutant.genes.extend(brain2_genes)
+
     merged_mutant.simplify_genome()
-    merged_mutant.refresh_gene_blocks()
     return merged_mutant
