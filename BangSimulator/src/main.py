@@ -105,10 +105,10 @@ def start_genetic_breeding(fights_per_match=10, iterations=1000, max_turns_per_f
 
         new_brain_pool = [
             brain_pool[0],
+            brain_pool[1],
             genetic_mutant_create(brain_pool[0]),
             genetic_mutant_create(brain_pool[1]),
-            genetic_mutant_merge(brain_pool[0], brain_pool[1]),
-            genetic_mutant_merge(brain_pool[0], brain_pool[2])
+            genetic_mutant_merge(brain_pool[0], brain_pool[1])
         ]
         brain_pool = new_brain_pool
 
@@ -123,12 +123,13 @@ def start_genetic_breeding(fights_per_match=10, iterations=1000, max_turns_per_f
                     better_brain.score += 1
         # Do post-fight sorting
         brain_pool = sorted(brain_pool, key=attrgetter('score'), reverse=True)
-        print("{:.2%} complete, winner is in {} generation and has {} genes".format(iteration / iterations, brain_pool[0].generation, len(brain_pool[0].genes)))
+        # Log and plot
         plot_add_value("Winner generation", brain_pool[0].generation)
         plot_add_value("Winner gene count", len(brain_pool[0].genes))
         plot_add_value("Winner score", brain_pool[0].score)
         _, win_ratio = compare_brains(100, False, 10000, brain_pool[0], CustomisablyResponsiveBrain())
         plot_add_value("Winner baseline %", win_ratio, 1)
+        print("{:.2%} complete, winner is in {} generation and has {} genes ({:%} win ratio against baseline)".format(iteration / iterations, brain_pool[0].generation, len(brain_pool[0].genes), win_ratio))
 
     elapsed_time = time.process_time() - start_time
     import math
@@ -140,8 +141,9 @@ def start_genetic_breeding(fights_per_match=10, iterations=1000, max_turns_per_f
         print("Brain: {!r} {} (win rate {:%})".format(brain, "better than default" if winner == brain else "worse than default", win_ratio))
     plot_display()
 
-quick = True
+quick = False
+#quick = True
 if quick:
     start_genetic_breeding(fights_per_match=20, iterations=10)
 else:
-    start_genetic_breeding(fights_per_match=20, iterations=1000)
+    start_genetic_breeding(fights_per_match=100, iterations=100)

@@ -240,9 +240,9 @@ class GeneticBrain(ResponsiveBrain):
     ]
 
     mutation_functions = []
-    add_probability = 3
-    remove_probability = 2
-    swap_probability = 4
+    add_probability = 6
+    remove_probability = 3
+    swap_probability = 8
 
     def add(self):
         self.genes.insert(self.random.randint(0, len(self.genes) + 1), self.random.choice(GeneticBrain.gene_selection))
