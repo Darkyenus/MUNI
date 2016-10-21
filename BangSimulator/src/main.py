@@ -12,7 +12,7 @@ bred_brain = None
 def start(mode):
     global bred_brain
     if mode == MODE_MANUAL_FIGHT:
-        compare_brains(1, True, 10000000, HumanBrain(), bred_brain if bred_brain is not None else CustomisablyResponsiveBrain(name="DefaultOpponent"))
+        compare_brains(1, True, 0, HumanBrain(), bred_brain if bred_brain is not None else CustomisablyResponsiveBrain(name="DefaultOpponent"))
     elif mode == MODE_DEBUG_BREEDING:
         bred_brain = start_genetic_breeding(fights_per_match=20, iterations=10)
     elif mode == MODE_FULL_BREEDING:

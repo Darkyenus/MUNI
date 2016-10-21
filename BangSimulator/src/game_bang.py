@@ -2,6 +2,7 @@
 import random as random_package_not_thread_safe
 
 class Card:
+    """Represents a card. Only one instance per card type, see Cards class."""
     def __init__(self, name, deck_amount, needs_target=False):
         self.name = name
         self.deck_amount = deck_amount
@@ -13,6 +14,7 @@ class Card:
 
 
 class Cards:
+    """All implemented cards"""
     BANG = Card("Bang!", 25, needs_target=True)
     MANCATO = Card("Mancato!", 12)
     BIRRA = Card("Birra", 6)
@@ -34,6 +36,9 @@ class Cards:
     DUELLO.threat_response = [BANG, GATLING]
 
 class AbstractBrain:
+    """Basis for all brains. Brains are controllers of players and can be implemented in any way.
+    Brains should not retain any state about the current game, as they can be used in more games at the same time.
+    For such storage, Player can be used. Implementations should be thread safe."""
 
     # Call play_card in this to simulate player's turn.
     # Returns nothing
@@ -57,6 +62,8 @@ class AbstractBrain:
 
 
 class Player:
+    """Single player which enters the Game. New instance will be often created for each match."""
+
     def __init__(self, game, random, player_id, health, brain):
         self.game = game
         self.random = random
@@ -79,6 +86,7 @@ class Player:
         return "Player "+str(self.player_id)+" "+str(self.health)+"/"+str(self.max_health)
 
 def card_draw_return(game):
+    """Draw a card and return it. Caller must ensure that the card does not get lost from the game."""
     if len(game.fresh_cards) == 0:
         game.fresh_cards.extend(game.used_cards)
         game.used_cards.clear()
@@ -86,11 +94,14 @@ def card_draw_return(game):
     return game.fresh_cards.pop()
 
 def card_draw(player):
+    """Draw a card and add it to player's hand."""
     card = card_draw_return(player.game)
     player.game.log("draw card {} {}", player, card)
     player.cards.append(card)
 
 def card_discard(player, card):
+    """Discard a single card of given type from player's hand.
+    Returns true if succeeded, false if no such card exists."""
     if card in player.cards:
         player.cards.remove(card)
         player.game.used_cards.append(card)
@@ -99,9 +110,13 @@ def card_discard(player, card):
     return False
 
 class GameEndedException(Exception):
+    """Exception which may be thrown anywhere during the game turn logic, to indicate that the game has ended."""
     pass
 
 def card_play(player, card, target=None):
+    """Play given card type from player's hand. If the card is targeted, target must be also specified.
+    Return's true iff the card has been found in hand, played (and thus discarded).
+    Contains the logic of cards."""
     log = player.game.log
     if card not in player.cards:
         log("{} can't play {} because it is not in their inventory", player, card)
@@ -277,6 +292,7 @@ def card_play(player, card, target=None):
 pass
 
 def simulate_game_round(game):
+    """Simulate single round of running game"""
     try:
         for player in game.players:
             if player.health <= 0:
@@ -298,6 +314,10 @@ def simulate_game_round(game):
         pass
 
 def simulate_game(game, max_rounds=0):
+    """Simulate whole game, from current state (start?) to finish, quitting early if the game takes longer than max_turns
+    and max_turns is a meaningful value.
+    Returns "rounds, winner", where rounds is the amount of rounds that was simulated and winner is the winning player
+    (winner may be None)"""
     rounds = 0
     while len(game.players_in_game) >= 2:
         rounds += 1
@@ -314,8 +334,12 @@ def simulate_game(game, max_rounds=0):
         return rounds, survivors[0]
 
 class Game:
+    """Instance represents a single match of simplified bang"""
 
     def __init__(self, logging, seed=None, *brains):
+        """bool logging = enable logging to console?
+        seed = seed for random number generator for this match, None for random seed
+        brains = variable amount of brains, each representing one player which will be created"""
         self.fresh_cards = []
         self.used_cards = []
         self.logging = logging
@@ -333,6 +357,7 @@ class Game:
                 card_draw(player)
 
     def log(self, message_format, *args):
+        """Log message with the same syntax as string.format has, only if game logging is enabled"""
         if self.logging:
             print(message_format.format(*args))
 
