@@ -334,7 +334,7 @@ class Game:
 
     def log(self, message_format, *args):
         if self.logging:
-            print(message_format.format(args))
+            print(message_format.format(*args))
 
     @property
     def players_in_game(self):

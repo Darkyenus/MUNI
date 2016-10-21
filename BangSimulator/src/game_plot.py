@@ -36,4 +36,5 @@ def plot_display():
 
         subplot.legend(loc="center left", frameon=True, bbox_to_anchor=(1, 0.5)).draggable()
         i += 1
+    print("Close plot to continue...")
     plt.show()
