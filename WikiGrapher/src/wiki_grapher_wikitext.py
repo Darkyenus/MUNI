@@ -23,7 +23,4 @@ def extract_links(wiki_text):
             result.add(link_content[0].upper() + link_content[1:])
     return result
 
-#print(extract_links("Hello, welcome to the [[City]], where grass is [[Green (color)|green]] and the girls are [[Beauty#pretty|pretty]]!"))
-
-
-
+#print(extract_links("Welcome to the Paradise [[City]], where grass is [[Green (color)|green]] and the girls are [[Beauty#pretty|pretty]]!"))

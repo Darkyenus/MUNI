@@ -70,17 +70,17 @@ def process_page(page_element):
     if not is_valid_page_title(title):
         return
     redirect = page_element.find(TAG_REDIRECT)
-    wiki_grapher_db.create_article(title)
+    article_id = wiki_grapher_db.create_article(title)
     if redirect is not None:
         redirected_to = redirect.get("title")
-        wiki_grapher_db.create_redirect(title, redirected_to)
+        wiki_grapher_db.create_unresolved_reference(article_id, redirected_to, True)
     else:
         text = page_element.find(TAG_REVISION).find(TAG_TEXT).text
         if isinstance(text, str):
             links_to = wiki_grapher_wikitext.extract_links(text)
             for link in links_to:
                 if is_valid_page_title(link):
-                    wiki_grapher_db.create_reference(title, link)
+                    wiki_grapher_db.create_unresolved_reference(article_id, link, False)
             if len(links_to) != 0:
                 return
         else:
@@ -88,11 +88,8 @@ def process_page(page_element):
     #wiki_grapher_db.commit() Done outside for performance
 
 
-FILE_WIKI = "enwiki-latest-pages-articles.xml.bz2"
-FILE_TEST = "test.xml.bz2"
-
-
 start_time = time.time()
+
 
 def print_progress():
     current_time = time.time()
@@ -102,7 +99,7 @@ def print_progress():
     print("{:.2%} of file processed, {:.0f} seconds elapsed, {:.0f} remaining".format(percent_complete, time_elapsed, time_remaining))
 
 stat_counter = 0
-reader = BZip2Reader(FILE_WIKI)
+reader = BZip2Reader("enwiki-latest-pages-articles.xml.bz2")
 for (event, element) in xml.etree.ElementTree.iterparse(reader):
     if element.tag == TAG_SITE_INFO:
         element.clear()
@@ -119,5 +116,4 @@ print_progress()
 print("Done")
 
 # Starts SQL prompt
-# noinspection PyUnresolvedReferences
 import wiki_grapher_db_ui
