@@ -1,5 +1,6 @@
 import wiki_grapher_db
 import sqlite3
+import time
 
 
 def analyze_command(command):
@@ -47,11 +48,16 @@ def analyze_command(command):
                 print("Article "+to_title+" does not exist")
                 return True
 
+            start_time = time.time()
+
+            def print_timing():
+                print("({:.0f} seconds elapsed)".format(time.time() - start_time))
+
             # Already visited articles -> path to that article in chain of titles
             tried = dict()
             tried[from_id] = (from_id,)
             current_distance = 0
-            max_distance = 32
+            max_distance = 128
 
             to_try_next = [from_id]
 
@@ -59,11 +65,18 @@ def analyze_command(command):
                 if to_id in to_try_next:
                     print("Distance is "+str(current_distance)+", path is:")
                     print(" -> ".join(list(map(wiki_grapher_db.find_title_of, tried[to_id]))))
+                    print("Visited "+str(len(tried) - len(to_try_next))+" articles in the process")
+                    print_timing()
                     return True
 
                 if current_distance > max_distance:
                     print("Distance can't be determined, too far?")
+                    print_timing()
                     return True
+
+                print("... not "+str(current_distance)+" ", end="")
+                print_timing()
+
 
                 new_to_try_next = []
 
