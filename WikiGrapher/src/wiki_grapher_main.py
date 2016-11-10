@@ -22,6 +22,7 @@ class BZip2Reader:
             if len(block) == 0:
                 break
             else:
+                # noinspection PyArgumentList
                 result_bytes.extend(self.decompresor.decompress(block))
         return result_bytes
 
@@ -113,7 +114,6 @@ for (event, element) in xml.etree.ElementTree.iterparse(reader):
             print_progress()
 wiki_grapher_db.commit()
 print_progress()
+print("Resolving references...")
+wiki_grapher_db.resolve_references()
 print("Done")
-
-# Starts SQL prompt
-import wiki_grapher_db_ui
