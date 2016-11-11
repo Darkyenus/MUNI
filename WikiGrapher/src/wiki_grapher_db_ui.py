@@ -23,6 +23,14 @@ def analyze_command(command):
             title = " ".join(args[1:])
             print("Id of "+title+" is "+str(wiki_grapher_db.find_id_of(title)))
             return True
+        if args[0] == "resolve":
+            title = " ".join(args[1:])
+            original_id = wiki_grapher_db.find_id_of(title)
+            if original_id is None:
+                print("Article "+title+" does not exist")
+            redirects_to_id = wiki_grapher_db.resolve_id_redirect(original_id)
+            print(title+" ("+str(original_id)+") redirects to "+wiki_grapher_db.find_title_of(redirects_to_id)+" ("+str(redirects_to_id)+")")
+            return True
         if args[0] == "references":
             title = " ".join(args[1:])
             title_id = wiki_grapher_db.find_id_of(title)
@@ -47,6 +55,10 @@ def analyze_command(command):
             if to_id is None:
                 print("Article "+to_title+" does not exist")
                 return True
+            to_id_resolves_to = wiki_grapher_db.resolve_id_redirect(to_id)
+            if to_id_resolves_to != to_id:
+                print("Article "+to_title+" redirects to "+wiki_grapher_db.find_title_of(to_id_resolves_to)+", finding distance to that")
+                to_id = to_id_resolves_to
 
             start_time = time.time()
 

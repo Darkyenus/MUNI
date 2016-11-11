@@ -5,6 +5,7 @@ connection.execute("CREATE TABLE IF NOT EXISTS article (article_id INTEGER PRIMA
 connection.execute("CREATE UNIQUE INDEX IF NOT EXISTS article_title_index ON article(article_title)")
 connection.execute("CREATE TABLE IF NOT EXISTS article_unresolved_reference (article_id INTEGER NOT NULL, to_article_title TEXT NOT NULL, is_redirect INTEGER NOT NULL, PRIMARY KEY(article_id, to_article_title)) WITHOUT ROWID")
 connection.execute("CREATE TABLE IF NOT EXISTS article_reference (article_id INTEGER NOT NULL, to_article_id INTEGER NOT NULL, is_redirect INTEGER NOT NULL, PRIMARY KEY(article_id, to_article_id)) WITHOUT ROWID")# , FOREIGN KEY (article_id, to_article_id) REFERENCES article(article_id, article_id) omitted for performance
+connection.execute("CREATE UNIQUE INDEX IF NOT EXISTS article_reference_index ON article_reference(article_id, to_article_id)")
 connection.commit()
 
 
@@ -36,6 +37,16 @@ def find_id_of(article_title):
         return found[0]
     else:
         return None
+
+
+def resolve_id_redirect(article_id):
+    while True:
+        found = connection.execute("SELECT to_article_id FROM article_reference WHERE article_id=? AND is_redirect=1", (article_id,)).fetchone()
+        if found is not None:
+            article_id = found[0]
+            continue
+        break
+    return article_id
 
 
 def find_title_of(article_id):
