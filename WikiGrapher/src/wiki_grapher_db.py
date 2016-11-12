@@ -1,4 +1,6 @@
 import sqlite3
+import collections
+import random
 
 connection = sqlite3.connect("wiki-db.db")
 connection.execute("CREATE TABLE IF NOT EXISTS article (article_id INTEGER PRIMARY KEY NOT NULL, article_title TEXT NOT NULL)")
@@ -72,3 +74,29 @@ def article_id_references_ids(article_id):
     for row in connection.execute("SELECT to_article_id FROM article_reference WHERE article_id=?", (article_id,)).fetchall():
         result.append(row[0])
     return result
+
+
+def find_article_titles_of_title_like(title_like):
+    return list(map(lambda t: t[0], connection.execute("SELECT article_title FROM article WHERE article_title LIKE ? ORDER BY article_title", (title_like, )).fetchall()))
+
+
+class RandomOrderArticleIdIterator(collections.Iterator):
+
+    def __init__(self):
+        self.count = connection.execute("SELECT COUNT(*) FROM article").fetchone()[0]
+        self.random = random.Random()
+        self.already_returned = set()
+
+    # Articles are numbered sequentially from 1 to count(article), both inclusive.
+    # There is so much of them, that we assume we can just pull random ids, and check for collisions
+
+    def __next__(self):
+        while True:
+            article_id = self.random.randint(1, self.count)
+            if article_id in self.already_returned:
+                continue
+            self.already_returned.add(article_id)
+            return article_id
+
+    def next(self):
+        return self.__next__()
