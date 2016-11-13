@@ -3,7 +3,7 @@ import sqlite3
 import time
 
 
-def compute_distance(from_id, to_id, verbose, max_distance=128):
+def compute_distance(from_id, to_id, verbose):
     start_time = time.time()
 
     def print_timing():
@@ -20,19 +20,13 @@ def compute_distance(from_id, to_id, verbose, max_distance=128):
         if to_id in to_try_next:
             if verbose:
                 print("Distance is "+str(current_distance)+", path is:")
-                print(" -> ".join(list(map(wiki_grapher_db.find_title_of, tried[to_id]))))
-                print("Visited "+str(len(tried) - len(to_try_next))+" articles in the process")
+                print(str(current_distance)+") "+" -> ".join(list(map(wiki_grapher_db.find_title_of, tried[to_id]))))
+                print("Visited "+str(len(tried) - len(to_try_next))+" articles in the process ", end="")
                 print_timing()
             return current_distance
 
-        if current_distance > max_distance:
-            if verbose:
-                print("Distance can't be determined, too far?")
-                print_timing()
-            return None
-
         if verbose:
-            print("... not {}, trying {} more articles ".format(str(current_distance), len(to_try_next)), end="")
+            print("...not {}, trying {} more articles ".format(str(current_distance), len(to_try_next)), end="")
             print_timing()
 
 
@@ -46,12 +40,12 @@ def compute_distance(from_id, to_id, verbose, max_distance=128):
                 tried[reference] = tried[next_to_try] + (reference,)
                 new_to_try_next.append(reference)
 
-        to_try_next = new_to_try_next
-
         if len(new_to_try_next) == 0:
             if verbose:
-                print("Article is unreachable")
+                print("Article is unreachable, last article(s) at distance "+current_distance+": "+", ".join(to_try_next))
             return None
+
+        to_try_next = new_to_try_next
 
         current_distance += 1
 
@@ -142,7 +136,8 @@ def analyze_command(command):
                 to_id = random_article_iterator.next()
 
                 if verbose:
-                    print("Searching path from {} to {}".format(wiki_grapher_db.find_title_of(from_id), wiki_grapher_db.find_title_of(to_id)))
+                    print()
+                    print('Searching path from "{}" to "{}"'.format(wiki_grapher_db.find_title_of(from_id), wiki_grapher_db.find_title_of(to_id)))
 
                 distance = compute_distance(from_id, to_id, verbose)
                 if distance is not None:

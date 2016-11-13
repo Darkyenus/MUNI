@@ -96,7 +96,10 @@ class RandomOrderArticleIdIterator(collections.Iterator):
             if article_id in self.already_returned:
                 continue
             self.already_returned.add(article_id)
-            return article_id
+            resolved_article_id = resolve_id_redirect(article_id)
+            if resolved_article_id in self.already_returned:
+                continue
+            return resolved_article_id
 
     def next(self):
         return self.__next__()
